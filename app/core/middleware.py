@@ -25,9 +25,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         settings = get_settings()
         if settings.environment in {"production", "staging"}:
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         return response
 
