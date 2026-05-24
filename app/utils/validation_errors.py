@@ -30,34 +30,46 @@ def _clean_message(raw_message: str) -> str:
     return message
 
 
+def _is_password_field(field: str) -> bool:
+    return field == "password" or field.endswith(".password")
+
+
+def _password_message(error_type: str, raw_message: str) -> str:
+    if error_type == "string_too_short":
+        return "Password must be at least 8 characters"
+    if error_type == "string_too_long":
+        return "Password is too long"
+    if "Password must" in raw_message:
+        return raw_message
+    return "Password format invalid"
+
+
 def _message_for_field(field: str, error: dict[str, Any]) -> str:
     error_type = str(error.get("type", ""))
     raw_message = _clean_message(str(error.get("msg", "Invalid value")))
 
-    if field == "password" or field.endswith(".password"):
-        if error_type == "string_too_short":
-            return "Password must be at least 8 characters"
-        if error_type == "string_too_long":
-            return "Password is too long"
-        if "Password must" in raw_message:
-            return raw_message
-        return "Password format invalid"
+    if _is_password_field(field):
+        return _password_message(error_type, raw_message)
 
-    if is_sensitive_field_name(field.split(".")[-1]):
+    leaf_field = field.rsplit(".", 1)[-1]
+    if is_sensitive_field_name(leaf_field):
         return "Invalid value"
 
-    if error_type == "missing":
-        return f"{field} is required"
+    type_messages = {
+        "missing": f"{field} is required",
+        "string_too_short": f"{field} is too short",
+        "string_too_long": f"{field} is too long",
+    }
+    if error_type in type_messages:
+        return type_messages[error_type]
+
     if error_type in {"value_error", "assertion_error"}:
         return raw_message
-    if error_type == "string_too_short":
-        return f"{field} is too short"
-    if error_type == "string_too_long":
-        return f"{field} is too long"
+
     if error_type in {"value_error.email", "string_type"}:
         return "Invalid email format" if "email" in field else raw_message
 
-    return raw_message if raw_message else "Invalid value"
+    return raw_message or "Invalid value"
 
 
 def sanitize_validation_errors(errors: list[dict[str, Any]]) -> list[dict[str, str]]:
