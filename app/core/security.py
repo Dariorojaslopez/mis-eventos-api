@@ -15,25 +15,33 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from app.core.config import get_settings
 
 settings = get_settings()
 
-# bcrypt: salting automático por passlib; verify constant-time
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt: salting automático vía gensalt(); verify constant-time con checkpw
+_BCRYPT_ROUNDS = 12
 
 
 def hash_password(plain_password: str) -> str:
     """Genera hash bcrypt; nunca almacenar el valor en plaintext."""
-    return pwd_context.hash(plain_password)
+    password_bytes = plain_password.encode("utf-8")
+    salt = bcrypt.gensalt(rounds=_BCRYPT_ROUNDS)
+    return bcrypt.hashpw(password_bytes, salt).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifica contraseña contra hash almacenado de forma segura."""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"),
+            hashed_password.encode("utf-8"),
+        )
+    except (ValueError, TypeError):
+        return False
 
 
 def create_access_token(

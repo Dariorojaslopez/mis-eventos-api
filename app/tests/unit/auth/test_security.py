@@ -16,8 +16,15 @@ def test_password_hashing_roundtrip() -> None:
     plain = "Secure1@pass"
     hashed = hash_password(plain)
     assert hashed != plain
+    assert hashed.startswith("$2b$")
     assert verify_password(plain, hashed)
     assert not verify_password("wrong", hashed)
+
+
+def test_password_hashing_accepts_production_password() -> None:
+    plain = "Macarena1052.*"
+    hashed = hash_password(plain)
+    assert verify_password(plain, hashed)
 
 
 def test_jwt_create_and_decode() -> None:
