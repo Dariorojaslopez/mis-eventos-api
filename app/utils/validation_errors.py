@@ -34,6 +34,11 @@ def _is_password_field(field: str) -> bool:
     return field == "password" or field.endswith(".password")
 
 
+def _is_email_field(field: str) -> bool:
+    leaf = field.rsplit(".", 1)[-1]
+    return leaf == "email"
+
+
 def _password_message(error_type: str, raw_message: str) -> str:
     if error_type == "string_too_short":
         return "Password must be at least 8 characters"
@@ -63,11 +68,14 @@ def _message_for_field(field: str, error: dict[str, Any]) -> str:
     if error_type in type_messages:
         return type_messages[error_type]
 
+    email_error_types = {"value_error.email", "string_type"}
+    if _is_email_field(field) and (
+        error_type in email_error_types or error_type.startswith("value_error")
+    ):
+        return "Invalid email format"
+
     if error_type in {"value_error", "assertion_error"}:
         return raw_message
-
-    if error_type in {"value_error.email", "string_type"}:
-        return "Invalid email format" if "email" in field else raw_message
 
     return raw_message or "Invalid value"
 

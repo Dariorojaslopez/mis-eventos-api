@@ -54,7 +54,7 @@ def test_sanitize_validation_errors_omits_input_and_sensitive_values() -> None:
             "field": "password",
             "message": "Password must include uppercase, lowercase, a number, and a special character (!@#$%^&*._-)",
         },
-        {"field": "email", "message": "Input should be a valid string"},
+        {"field": "email", "message": "Invalid email format"},
     ]
     assert "input" not in str(sanitized)
     assert "SuperSecret123!" not in str(sanitized)
