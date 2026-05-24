@@ -48,8 +48,11 @@ COPY --from=builder /app/.venv /app/.venv
 COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini ./
+COPY scripts/start-production.sh ./scripts/start-production.sh
 
-RUN useradd --create-home --shell /bin/bash appuser && chown -R appuser:appuser /app
+RUN useradd --create-home --shell /bin/bash appuser \
+    && chmod +x ./scripts/start-production.sh \
+    && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8000
@@ -57,4 +60,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+CMD ["/app/scripts/start-production.sh"]

@@ -68,6 +68,10 @@ class Settings(BaseSettings):
         return self.environment == "development"
 
     @property
+    def run_db_migrations_on_startup(self) -> bool:
+        return self.environment in {"production", "staging"}
+
+    @property
     def sync_database_url(self) -> str:
         """URL síncrona para Alembic (psycopg no requerido: usamos asyncpg vía run_sync)."""
         return self.database_url.replace("+asyncpg", "")

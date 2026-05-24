@@ -18,6 +18,7 @@ from app.core.exceptions import (
 )
 from app.core.logging import get_logger, setup_logging
 from app.core.middleware import RequestIdMiddleware, SecurityHeadersMiddleware
+from app.core.migrations import apply_pending_migrations
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -32,6 +33,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         environment=settings.environment,
         version=settings.app_version,
     )
+    await apply_pending_migrations()
     yield
     await engine.dispose()
     logger.info("application_shutdown")
