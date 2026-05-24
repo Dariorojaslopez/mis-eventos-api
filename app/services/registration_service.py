@@ -4,7 +4,7 @@ from uuid import UUID
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import AppException, ConflictError, ForbiddenError, NotFoundError
+from app.core.exceptions import AppException, ForbiddenError, NotFoundError
 from app.core.logging import get_logger
 from app.models.event import Event, EventStatus
 from app.models.event_registration import EventRegistration, RegistrationStatus
@@ -20,10 +20,6 @@ from app.schemas.registration import (
 from app.schemas.user import UserRead
 
 logger = get_logger(__name__)
-
-NON_REGISTERABLE_EVENT_STATUSES = frozenset(
-    {EventStatus.CANCELLED, EventStatus.FINISHED},
-)
 
 
 class RegistrationService:
@@ -50,12 +46,12 @@ class RegistrationService:
             )
             if existing_active is not None:
                 self._log_registration(
-                    "duplicate_registration_attempt",
+                    "registration_already_active",
                     user_id=current_user.id,
                     event_id=event_id,
                     registration_id=existing_active.id,
                 )
-                raise ConflictError("User is already registered for this event")
+                return RegistrationRead.model_validate(existing_active)
 
             if event.available_slots <= 0:
                 self._log_registration(
@@ -162,9 +158,9 @@ class RegistrationService:
         event: Event,
         current_user: UserRead,
     ) -> None:
-        if event.status in NON_REGISTERABLE_EVENT_STATUSES:
+        if event.status != EventStatus.PUBLISHED:
             raise AppException(
-                "Cannot register for cancelled or finished events",
+                "Only published events accept registrations",
                 code="event_not_registerable",
                 status_code=409,
             )
@@ -173,14 +169,6 @@ class RegistrationService:
             raise AppException(
                 "Organizers cannot register for their own events",
                 code="organizer_self_registration",
-                status_code=409,
-            )
-
-        scheduled_sessions = await self._registrations.count_scheduled_sessions(event.id)
-        if scheduled_sessions == 0:
-            raise AppException(
-                "Event has no scheduled sessions",
-                code="no_scheduled_sessions",
                 status_code=409,
             )
 

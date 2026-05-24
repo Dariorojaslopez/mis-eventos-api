@@ -16,7 +16,11 @@ EVENT_END = EVENT_START + timedelta(hours=9)
 
 
 async def _event_with_session(
-    async_client: AsyncClient, auth_headers: dict[str, str], **event_kw
+    async_client: AsyncClient,
+    auth_headers: dict[str, str],
+    *,
+    with_session: bool = True,
+    **event_kw,
 ) -> str:
     event = assert_status(
         await async_client.post(
@@ -32,14 +36,15 @@ async def _event_with_session(
         201,
     )
     event_id = event["id"]
-    assert_status(
-        await async_client.post(
-            f"/api/v1/events/{event_id}/sessions",
-            json=build_session_payload(),
-            headers=auth_headers,
-        ),
-        201,
-    )
+    if with_session:
+        assert_status(
+            await async_client.post(
+                f"/api/v1/events/{event_id}/sessions",
+                json=build_session_payload(),
+                headers=auth_headers,
+            ),
+            201,
+        )
     return event_id
 
 
@@ -60,25 +65,42 @@ async def test_register_success(
 
 
 @pytest.mark.asyncio
-async def test_duplicate_registration(
+async def test_register_success_without_sessions(
     async_client: AsyncClient,
     auth_headers: dict[str, str],
     attendee_auth_headers: dict[str, str],
 ) -> None:
-    event_id = await _event_with_session(async_client, auth_headers)
-    assert_status(
+    event_id = await _event_with_session(async_client, auth_headers, with_session=False)
+    body = assert_status(
         await async_client.post(
             f"/api/v1/events/{event_id}/register", headers=attendee_auth_headers
         ),
         201,
     )
-    assert_error(
+    assert body["status"] == "registered"
+
+
+@pytest.mark.asyncio
+async def test_duplicate_registration_is_idempotent(
+    async_client: AsyncClient,
+    auth_headers: dict[str, str],
+    attendee_auth_headers: dict[str, str],
+) -> None:
+    event_id = await _event_with_session(async_client, auth_headers)
+    first = assert_status(
         await async_client.post(
             f"/api/v1/events/{event_id}/register", headers=attendee_auth_headers
         ),
-        status_code=409,
-        code="conflict",
+        201,
     )
+    second = assert_status(
+        await async_client.post(
+            f"/api/v1/events/{event_id}/register", headers=attendee_auth_headers
+        ),
+        201,
+    )
+    assert first["id"] == second["id"]
+    assert second["status"] == "registered"
 
 
 @pytest.mark.asyncio

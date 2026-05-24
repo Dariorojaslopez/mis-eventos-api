@@ -1,12 +1,11 @@
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.event import Event
 from app.models.event_registration import EventRegistration, RegistrationStatus
-from app.models.session import Session, SessionStatus
 from app.repositories.base import BaseRepository
 
 
@@ -69,15 +68,3 @@ class RegistrationRepository(BaseRepository[EventRegistration]):
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
-
-    async def count_scheduled_sessions(self, event_id: UUID) -> int:
-        stmt = (
-            select(func.count())
-            .select_from(Session)
-            .where(
-                Session.event_id == event_id,
-                Session.status == SessionStatus.SCHEDULED,
-            )
-        )
-        result = await self._session.execute(stmt)
-        return int(result.scalar_one())
