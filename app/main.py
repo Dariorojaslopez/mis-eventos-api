@@ -42,9 +42,9 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         version=settings.app_version,
         description="API enterprise para gestión de eventos — Mis Eventos",
-        openapi_url=f"{settings.api_v1_prefix}/openapi.json",
-        docs_url=f"{settings.api_v1_prefix}/docs",
-        redoc_url=f"{settings.api_v1_prefix}/redoc",
+        openapi_url="/openapi.json",
+        docs_url="/docs",
+        redoc_url="/redoc",
         lifespan=lifespan,
     )
 
