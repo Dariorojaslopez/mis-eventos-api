@@ -74,7 +74,7 @@ def require_roles(*allowed_roles: UserRole):
         repository = UserRepository(session)
         user = await repository.get_active_by_id(user_id)
         if user is None:
-            raise UnauthorizedError("User not found or inactive")
+            raise UnauthorizedError("Unauthorized")
 
         if user.role.value != token_role:
             raise UnauthorizedError("Token role mismatch")

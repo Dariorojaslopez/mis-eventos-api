@@ -17,7 +17,7 @@ from app.core.exceptions import (
     validation_exception_handler,
 )
 from app.core.logging import get_logger, setup_logging
-from app.core.middleware import RequestIdMiddleware
+from app.core.middleware import RequestIdMiddleware, SecurityHeadersMiddleware
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -56,6 +56,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
         expose_headers=["X-Request-ID"],
     )
+    application.add_middleware(SecurityHeadersMiddleware)
     application.add_middleware(RequestIdMiddleware)
 
     application.add_exception_handler(AppException, app_exception_handler)

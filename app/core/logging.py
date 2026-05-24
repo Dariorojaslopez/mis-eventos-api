@@ -4,6 +4,7 @@ import sys
 import structlog
 
 from app.core.config import get_settings
+from app.utils.sensitive_data import redact_sensitive_event
 
 
 def setup_logging() -> None:
@@ -15,6 +16,7 @@ def setup_logging() -> None:
         structlog.stdlib.add_log_level,
         structlog.stdlib.add_logger_name,
         structlog.processors.TimeStamper(fmt="iso", utc=True),
+        redact_sensitive_event,
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
     ]

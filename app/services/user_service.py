@@ -11,6 +11,9 @@ from app.schemas.user import TokenResponse, UserCreate, UserLogin, UserRead
 
 settings = get_settings()
 
+_INVALID_CREDENTIALS_MESSAGE = "Invalid email or password"
+_REGISTRATION_FAILED_MESSAGE = "Unable to complete registration"
+
 
 class UserService:
     def __init__(self, session: AsyncSession) -> None:
@@ -18,7 +21,8 @@ class UserService:
 
     async def register(self, data: UserCreate) -> UserRead:
         if await self._repository.email_exists(data.email):
-            raise ConflictError("Email already registered")
+            # Mensaje genérico: no revelar si el email ya está registrado
+            raise ConflictError(_REGISTRATION_FAILED_MESSAGE)
 
         user = User(
             email=data.email.lower(),
@@ -33,10 +37,11 @@ class UserService:
     async def authenticate(self, credentials: UserLogin) -> TokenResponse:
         user = await self._repository.get_by_email(credentials.email)
         if user is None or not verify_password(credentials.password, user.hashed_password):
-            raise UnauthorizedError("Invalid email or password")
+            raise UnauthorizedError(_INVALID_CREDENTIALS_MESSAGE)
 
         if not user.is_active:
-            raise UnauthorizedError("Account is inactive")
+            # Mismo mensaje que credenciales inválidas para evitar enumeración
+            raise UnauthorizedError(_INVALID_CREDENTIALS_MESSAGE)
 
         token = create_access_token(
             user.id,
@@ -48,5 +53,5 @@ class UserService:
     async def get_current_user(self, user_id: UUID) -> UserRead:
         user = await self._repository.get_active_by_id(user_id)
         if user is None:
-            raise UnauthorizedError("User not found or inactive")
+            raise UnauthorizedError("Unauthorized")
         return UserRead.model_validate(user)

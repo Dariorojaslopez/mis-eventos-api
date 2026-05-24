@@ -1,12 +1,13 @@
 from typing import Any
 
 from fastapi import Request, status
-from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.logging import get_logger
+from app.utils.sensitive_data import redact_mapping
+from app.utils.validation_errors import sanitize_validation_errors
 
 logger = get_logger(__name__)
 
@@ -83,7 +84,7 @@ def _error_payload(
     code: str,
     message: str,
     request_id: str | None,
-    details: dict[str, Any] | None = None,
+    details: dict[str, Any] | list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     body: dict[str, Any] = {
         "error": {
@@ -105,6 +106,7 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
         message=exc.message,
         status_code=exc.status_code,
         request_id=request_id,
+        details=redact_mapping(exc.details) if exc.details else None,
     )
     return JSONResponse(
         status_code=exc.status_code,
@@ -112,7 +114,7 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
             code=exc.code,
             message=exc.message,
             request_id=request_id,
-            details=exc.details,
+            details=redact_mapping(exc.details) if exc.details else None,
         ),
     )
 
@@ -139,7 +141,7 @@ async def validation_exception_handler(
             code="validation_error",
             message="Request validation failed",
             request_id=request_id,
-            details={"errors": jsonable_encoder(exc.errors())},
+            details=sanitize_validation_errors(exc.errors()),
         ),
     )
 

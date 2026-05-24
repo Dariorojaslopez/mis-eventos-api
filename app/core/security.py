@@ -1,3 +1,16 @@
+"""
+Seguridad de autenticación: hashing de contraseñas y JWT.
+
+Transporte (HTTPS):
+    El frontend (Vercel) y el backend (Render) se comunican exclusivamente vía HTTPS.
+    TLS cifra el tráfico en tránsito, incluidas las contraseñas en login/register.
+    No se requiere cifrado manual adicional (AES/RSA) en el cliente.
+
+Almacenamiento:
+    Las contraseñas se persisten únicamente como hashes bcrypt (salting automático).
+    Nunca se guarda plaintext ni se devuelven hashes en respuestas de la API.
+"""
+
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -9,14 +22,17 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+# bcrypt: salting automático por passlib; verify constant-time
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(plain_password: str) -> str:
+    """Genera hash bcrypt; nunca almacenar el valor en plaintext."""
     return pwd_context.hash(plain_password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verifica contraseña contra hash almacenado de forma segura."""
     return pwd_context.verify(plain_password, hashed_password)
 
 

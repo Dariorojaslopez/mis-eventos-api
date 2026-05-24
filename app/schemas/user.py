@@ -1,14 +1,13 @@
-import re
 from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.models.user import UserRole
-
-PASSWORD_MIN_LENGTH = 8
-PASSWORD_PATTERN = re.compile(
-    r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$"
+from app.utils.password_policy import (
+    PASSWORD_MAX_LENGTH,
+    PASSWORD_MIN_LENGTH,
+    validate_password_strength,
 )
 
 
@@ -18,16 +17,12 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    password: str = Field(min_length=PASSWORD_MIN_LENGTH, max_length=128)
+    password: str = Field(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
 
     @field_validator("password")
     @classmethod
-    def validate_password_strength(cls, value: str) -> str:
-        if not PASSWORD_PATTERN.match(value):
-            raise ValueError(
-                "Password must contain uppercase, lowercase, digit and special character"
-            )
-        return value
+    def validate_password(cls, value: str) -> str:
+        return validate_password_strength(value)
 
     @field_validator("full_name")
     @classmethod
@@ -37,7 +32,7 @@ class UserCreate(UserBase):
 
 class UserLogin(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=1, max_length=128)
+    password: str = Field(min_length=1, max_length=PASSWORD_MAX_LENGTH)
 
 
 class UserRead(UserBase):
