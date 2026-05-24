@@ -24,12 +24,11 @@ runs:
       with:
         enable-cache: true
         cache-dependency-glob: |
-          backend/uv.lock
-          backend/pyproject.toml
+          uv.lock
+          pyproject.toml
 
     - name: Sync dependencies
       shell: bash
-      working-directory: backend
       run: |
         if [ "${{ inputs.sync-dev }}" = "true" ]; then
           uv sync --all-groups

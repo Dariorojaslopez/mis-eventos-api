@@ -4,13 +4,19 @@ on:
   push:
     branches: [main, develop, master]
     paths:
-      - "backend/**"
+      - "app/**"
+      - "pyproject.toml"
+      - "uv.lock"
       - ".github/workflows/security-checks.yml"
+      - ".github/actions/setup-backend/**"
   pull_request:
     branches: [main, develop, master]
     paths:
-      - "backend/**"
+      - "app/**"
+      - "pyproject.toml"
+      - "uv.lock"
       - ".github/workflows/security-checks.yml"
+      - ".github/actions/setup-backend/**"
   schedule:
     # Lunes 06:00 UTC — auditoría periódica de dependencias
     - cron: "0 6 * * 1"
@@ -20,7 +26,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  WORKING_DIRECTORY: backend
+  WORKING_DIRECTORY: .
 
 permissions:
   contents: read
@@ -65,6 +71,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pip-audit-report
-          path: backend/pip-audit-report.json
+          path: pip-audit-report.json
           retention-days: 7
           if-no-files-found: ignore

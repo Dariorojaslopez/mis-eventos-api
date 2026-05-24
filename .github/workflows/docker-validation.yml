@@ -4,20 +4,28 @@ on:
   push:
     branches: [main, develop, master]
     paths:
-      - "backend/**"
+      - "app/**"
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - "docker-compose.test.yml"
       - ".github/workflows/docker-validation.yml"
+      - ".github/actions/setup-backend/**"
   pull_request:
     branches: [main, develop, master]
     paths:
-      - "backend/**"
+      - "app/**"
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - "docker-compose.test.yml"
       - ".github/workflows/docker-validation.yml"
+      - ".github/actions/setup-backend/**"
 
 concurrency:
   group: docker-validation-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  WORKING_DIRECTORY: backend
+  WORKING_DIRECTORY: .
   IMAGE_NAME: mis-eventos-backend
   SECRET_KEY: ci-test-secret-key-minimum-32-characters-long
 
@@ -46,8 +54,8 @@ jobs:
       - name: Build image (${{ matrix.target }})
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
+          context: .
+          file: ./Dockerfile
           target: ${{ matrix.target }}
           tags: ${{ env.IMAGE_NAME }}:${{ matrix.target }}-ci
           load: true
@@ -82,7 +90,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build production image
-        run: docker build --target production -t ${{ env.IMAGE_NAME }}:health-ci ./backend
+        run: docker build --target production -t ${{ env.IMAGE_NAME }}:health-ci .
 
       - name: Run container and verify /health
         run: |

@@ -4,13 +4,19 @@ on:
   push:
     branches: [main, develop, master]
     paths:
-      - "backend/**"
+      - "app/**"
+      - "alembic/**"
+      - "pyproject.toml"
+      - "uv.lock"
       - ".github/workflows/backend-ci.yml"
       - ".github/actions/setup-backend/**"
   pull_request:
     branches: [main, develop, master]
     paths:
-      - "backend/**"
+      - "app/**"
+      - "alembic/**"
+      - "pyproject.toml"
+      - "uv.lock"
       - ".github/workflows/backend-ci.yml"
       - ".github/actions/setup-backend/**"
 
@@ -20,7 +26,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: "3.12"
-  WORKING_DIRECTORY: backend
+  WORKING_DIRECTORY: .
   ENVIRONMENT: test
   AI_PROVIDER: mock
   SECRET_KEY: ci-test-secret-key-minimum-32-characters-long
@@ -143,7 +149,7 @@ jobs:
         with:
           name: coverage-${{ matrix.python-version }}
           path: |
-            backend/htmlcov/
-            backend/coverage.xml
+            htmlcov/
+            coverage.xml
           retention-days: 14
           if-no-files-found: warn
