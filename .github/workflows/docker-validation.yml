@@ -1,0 +1,110 @@
+name: Docker Validation
+
+on:
+  push:
+    branches: [main, develop, master]
+    paths:
+      - "backend/**"
+      - ".github/workflows/docker-validation.yml"
+  pull_request:
+    branches: [main, develop, master]
+    paths:
+      - "backend/**"
+      - ".github/workflows/docker-validation.yml"
+
+concurrency:
+  group: docker-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  WORKING_DIRECTORY: backend
+  IMAGE_NAME: mis-eventos-backend
+  SECRET_KEY: ci-test-secret-key-minimum-32-characters-long
+
+permissions:
+  contents: read
+
+jobs:
+  docker-build:
+    name: Docker Build & Health
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: true
+      matrix:
+        target: [development, production]
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (${{ matrix.target }})
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          target: ${{ matrix.target }}
+          tags: ${{ env.IMAGE_NAME }}:${{ matrix.target }}-ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  docker-compose:
+    name: Docker Compose Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: docker-build
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build docker-compose.yml
+        run: docker compose build
+
+      - name: Build docker-compose.test.yml
+        run: docker compose -f docker-compose.test.yml build
+
+  production-healthcheck:
+    name: Production Healthcheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: docker-build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build production image
+        run: docker build --target production -t ${{ env.IMAGE_NAME }}:health-ci ./backend
+
+      - name: Run container and verify /health
+        run: |
+          docker run -d --name mis-eventos-health \
+            -e SECRET_KEY="${{ env.SECRET_KEY }}" \
+            -e ENVIRONMENT=test \
+            -e AI_PROVIDER=mock \
+            -p 18000:8000 \
+            ${{ env.IMAGE_NAME }}:health-ci
+
+          for i in {1..30}; do
+            if curl -fsS http://localhost:18000/health; then
+              echo "Healthcheck OK"
+              docker stop mis-eventos-health
+              docker rm mis-eventos-health
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Healthcheck failed"
+          docker logs mis-eventos-health
+          docker stop mis-eventos-health || true
+          docker rm mis-eventos-health || true
+          exit 1

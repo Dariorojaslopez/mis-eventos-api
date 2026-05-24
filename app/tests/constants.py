@@ -1,0 +1,2 @@
+VALID_PASSWORD = "Secure1@pass"
+INVALID_PASSWORD = "weak"

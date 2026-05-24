@@ -1,0 +1,70 @@
+name: Security Checks
+
+on:
+  push:
+    branches: [main, develop, master]
+    paths:
+      - "backend/**"
+      - ".github/workflows/security-checks.yml"
+  pull_request:
+    branches: [main, develop, master]
+    paths:
+      - "backend/**"
+      - ".github/workflows/security-checks.yml"
+  schedule:
+    # Lunes 06:00 UTC — auditoría periódica de dependencias
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: security-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  WORKING_DIRECTORY: backend
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-audit:
+    name: Dependency Audit (pip-audit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version: ["3.12"]
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup backend
+        uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ matrix.python-version }}
+          sync-dev: "true"
+
+      - name: Export locked requirements for audit
+        run: uv export --no-hashes --frozen --no-emit-project -o requirements-audit.txt
+
+      - name: Run pip-audit
+        run: uv run pip-audit -r requirements-audit.txt --strict --desc
+
+      - name: Upload pip-audit SARIF (optional)
+        if: failure()
+        continue-on-error: true
+        run: |
+          uv run pip-audit -r requirements-audit.txt --format json -o pip-audit-report.json || true
+
+      - name: Upload audit report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit-report
+          path: backend/pip-audit-report.json
+          retention-days: 7
+          if-no-files-found: ignore

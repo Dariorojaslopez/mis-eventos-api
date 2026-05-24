@@ -1,0 +1,38 @@
+name: Setup Mis Eventos backend
+description: Instala uv, cachea dependencias y sincroniza el entorno Python del backend.
+
+inputs:
+  python-version:
+    description: Versión de Python
+    required: false
+    default: "3.12"
+  sync-dev:
+    description: Instalar grupo dev (pytest, ruff, black, etc.)
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+        cache-dependency-glob: |
+          backend/uv.lock
+          backend/pyproject.toml
+
+    - name: Sync dependencies
+      shell: bash
+      working-directory: backend
+      run: |
+        if [ "${{ inputs.sync-dev }}" = "true" ]; then
+          uv sync --all-groups
+        else
+          uv sync --no-dev
+        fi
