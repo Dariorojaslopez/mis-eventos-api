@@ -1,134 +1,417 @@
 # Mis Eventos — Backend API
 
-[![Backend CI](https://github.com/OWNER/REPO/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/backend-ci.yml)
-[![Docker Validation](https://github.com/OWNER/REPO/actions/workflows/docker-validation.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/docker-validation.yml)
-[![Security Checks](https://github.com/OWNER/REPO/actions/workflows/security-checks.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/security-checks.yml)
-[![Coverage](https://img.shields.io/badge/coverage-%3E70%25-brightgreen)](https://github.com/OWNER/REPO/actions/workflows/backend-ci.yml)
-[![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688)](https://fastapi.tiangolo.com/)
+[![Backend CI](https://github.com/Dariorojaslopez/mis-eventos-api/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/Dariorojaslopez/mis-eventos-api/actions/workflows/backend-ci.yml)
+[![Docker Validation](https://github.com/Dariorojaslopez/mis-eventos-api/actions/workflows/docker-validation.yml/badge.svg)](https://github.com/Dariorojaslopez/mis-eventos-api/actions/workflows/docker-validation.yml)
+[![Security Checks](https://github.com/Dariorojaslopez/mis-eventos-api/actions/workflows/security-checks.yml/badge.svg)](https://github.com/Dariorojaslopez/mis-eventos-api/actions/workflows/security-checks.yml)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue?logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0%20Async-red)](https://www.sqlalchemy.org/)
+[![Docker](https://img.shields.io/badge/Docker-multi--stage-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Render](https://img.shields.io/badge/Deploy-Render-46E3B7?logo=render&logoColor=white)](https://mis-eventos-api-3625.onrender.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Nota:** sustituye `OWNER/REPO` en los badges por tu organización y repositorio de GitHub.
+API REST enterprise para **Mis Eventos** — plataforma de gestión de eventos corporativos. Backend async production-ready con reglas de negocio explícitas, seguridad hardened, observabilidad estructurada e integración de IA desacoplada del dominio.
 
-API backend para **Mis Eventos**, plataforma de gestión de eventos corporativos. Diseñada con Clean Architecture ligera, stack async de punta a punta y calidad de software orientada a equipos senior.
+**Documentación extendida:** [ARCHITECTURE.md](ARCHITECTURE.md) · [AI_USAGE.md](AI_USAGE.md)
 
-**Documentación:** [ARCHITECTURE.md](ARCHITECTURE.md) · [AI_USAGE.md](AI_USAGE.md) (uso responsable de IA en el desarrollo)
+---
+
+## 🌐 Deploy
+
+| Entorno | URL |
+|---------|-----|
+| **Backend API** | [https://mis-eventos-api-3625.onrender.com](https://mis-eventos-api-3625.onrender.com) |
+| **Swagger UI** | [https://mis-eventos-api-3625.onrender.com/docs](https://mis-eventos-api-3625.onrender.com/docs) |
+| **ReDoc** | [https://mis-eventos-api-3625.onrender.com/redoc](https://mis-eventos-api-3625.onrender.com/redoc) |
+| **OpenAPI JSON** | [https://mis-eventos-api-3625.onrender.com/openapi.json](https://mis-eventos-api-3625.onrender.com/openapi.json) |
+| **Health (liveness)** | [https://mis-eventos-api-3625.onrender.com/health](https://mis-eventos-api-3625.onrender.com/health) |
+| **Frontend (SPA)** | [https://mis-eventos-web.vercel.app/](https://mis-eventos-web.vercel.app/) |
+
+Prefijo API: `/api/v1`
 
 ---
 
 ## Tabla de contenidos
 
-1. [Introducción](#introducción)
-2. [Stack tecnológico](#stack-tecnológico)
-3. [Arquitectura](#arquitectura)
-4. [Setup local](#setup-local)
-5. [Variables de entorno](#variables-de-entorno)
-6. [Migraciones](#migraciones)
-7. [Testing](#testing)
-8. [Swagger / OpenAPI](#swagger--openapi)
-9. [CI/CD](#cicd)
-10. [AI Feature](#ai-feature)
-11. [Docker](#docker)
-12. [Seguridad](#seguridad)
-13. [API REST (v1)](#api-rest-v1)
-14. [Licencia](#licencia)
+- [Descripción](#descripción)
+- [Features](#features)
+- [Arquitectura](#arquitectura)
+- [Seguridad](#seguridad)
+- [JWT Authentication](#jwt-authentication)
+- [PostgreSQL](#postgresql)
+- [SQLAlchemy Async](#sqlalchemy-async)
+- [Alembic](#alembic)
+- [Docker](#docker)
+- [CI/CD](#cicd)
+- [Testing](#testing)
+- [IA](#ia)
+- [OpenAPI](#openapi)
+- [Observabilidad](#observabilidad)
+- [Stack tecnológico](#stack-tecnológico)
+- [Setup local](#setup-local)
+- [Variables de entorno](#variables-de-entorno)
+- [API REST (v1)](#api-rest-v1)
+- [Licencia](#licencia)
 
 ---
 
-## Introducción
+## Descripción
 
-**Mis Eventos** es una plataforma para planificar, publicar y operar eventos presenciales o híbridos. El backend expone una API REST versionada que cubre el ciclo de vida completo del dominio:
+**Mis Eventos Backend** es el núcleo de la plataforma full stack desplegada en producción (Render + Vercel). Expone una API REST versionada que cubre autenticación, eventos, sesiones, inscripciones y generación asistida de contenido con IA.
+
+No es un CRUD genérico: incorpora **máquinas de estado**, control de **cupos concurrentes**, validación de **solapamientos de sesiones**, elegibilidad de **inscripciones**, errores HTTP **estructurados** y trazabilidad por `request_id`.
+
+Diseñado con **Clean Architecture pragmática**: capas desacopladas, async end-to-end, contratos Pydantic/OpenAPI como fuente de verdad y PostgreSQL como única fuente de persistencia en todos los entornos.
+
+Para el diseño completo del sistema (frontend + backend + infraestructura), ver [ARCHITECTURE.md](ARCHITECTURE.md).
+
+---
+
+## Features
 
 | Dominio | Capacidades |
 |---------|-------------|
-| **Usuarios y auth** | Registro, login JWT, perfiles, roles (`admin`, `organizer`, `attendee`) |
+| **Auth & usuarios** | Registro, login JWT, perfil `/me`, roles (`admin`, `organizer`, `attendee`) |
 | **Eventos** | CRUD, estados (`draft` → `published` → `finished` / `cancelled`), capacidad y cupos |
-| **Sesiones** | Agenda por evento, validación de solapamientos (ponente / sala), ventana temporal |
-| **Inscripciones** | Registro de asistentes, control de cupos, cancelación y vista “mis eventos” |
-| **IA** | Generación asistida de descripciones de evento con proveedor configurable y fallback |
-
-El objetivo de la plataforma es ofrecer una base **mantenible y auditable** para organizadores y asistentes, no un CRUD genérico: reglas de negocio explícitas, trazabilidad por `request_id` y contratos HTTP predecibles.
-
----
-
-## Stack tecnológico
-
-| Tecnología | Rol | Por qué está aquí |
-|------------|-----|-------------------|
-| **Python 3.12** | Runtime | Tipado maduro, rendimiento y ecosistema actual |
-| **FastAPI** | Framework HTTP | Async nativo, validación Pydantic y OpenAPI automático |
-| **PostgreSQL 16** | Persistencia | ACID, enums nativos, JSON futuro, producción real |
-| **SQLAlchemy 2.0 (async)** | ORM | `AsyncSession`, `Mapped[]` tipado, un solo modelo de datos |
-| **asyncpg** | Driver | Driver async de referencia para PostgreSQL en Python |
-| **Alembic** | Migraciones | Evolución de esquema versionada y reproducible |
-| **Pydantic v2** | Contratos / settings | Validación en frontera HTTP y configuración tipada |
-| **JWT (python-jose)** | Autenticación | Tokens stateless con claims de rol |
-| **Structlog** | Observabilidad | Logs estructurados JSON listos para agregadores |
-| **Pytest + pytest-asyncio** | Calidad | Tests unitarios e integración contra PostgreSQL real |
-| **uv** | Dependencias | Lockfile determinista, installs rápidos en CI y local |
-| **Docker Compose** | Entorno | Paridad dev/prod, Postgres + API en un comando |
-| **GitHub Actions** | CI/CD | Lint, tests, cobertura, seguridad y validación Docker |
+| **Sesiones** | Agenda por evento, validación de solapamientos (ponente / sala) |
+| **Inscripciones** | Registro de asistentes, control de cupos, cancelación, idempotencia, `/me/events` |
+| **IA** | Generación de descripciones con OpenAI o mock, rate limit, fallback automático |
+| **Operaciones** | Health checks, logs JSON, migraciones automáticas en producción, security headers |
 
 ---
 
 ## Arquitectura
 
-El backend aplica **Clean Architecture ligera**: dependencias apuntan hacia el dominio; HTTP no conoce SQL; la lógica de negocio vive en servicios.
+Monolito modular async con separación estricta de responsabilidades:
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  Routes (FastAPI)          app/api/v1/routes/                │
-│  — Validación entrada, auth, códigos HTTP                    │
-├──────────────────────────────────────────────────────────────┤
-│  Services                  app/services/                     │
-│  — Reglas de negocio, orquestación, excepciones de dominio   │
-├──────────────────────────────────────────────────────────────┤
-│  Repositories              app/repositories/                 │
-│  — Queries y persistencia (sin reglas de negocio)            │
-├──────────────────────────────────────────────────────────────┤
-│  Models (ORM)              app/models/                       │
-├──────────────────────────────────────────────────────────────┤
-│  Infrastructure            app/core/ + app/providers/          │
-│  — Config, DB, JWT, logging, integraciones externas (IA)     │
-└──────────────────────────────────────────────────────────────┘
+                    ┌─────────────────────────────────────┐
+                    │         Cliente (React SPA)          │
+                    │         Vercel · TanStack Query      │
+                    └──────────────────┬──────────────────┘
+                                       │ HTTPS / JSON / JWT
+                    ┌──────────────────▼──────────────────┐
+  HTTP Layer        │  Routes + Dependencies + Middleware  │
+                    │  app/api/v1/ · app/core/middleware   │
+                    ├─────────────────────────────────────┤
+  Application       │  Services — reglas de negocio        │
+                    │  app/services/                       │
+                    ├─────────────────────────────────────┤
+  Persistence       │  Repositories + Models (SQLAlchemy)  │
+                    │  app/repositories/ · app/models/     │
+                    ├─────────────────────────────────────┤
+  Infrastructure    │  Core + Providers                  │
+                    │  config · security · logging · AI    │
+                    └──────────────────┬──────────────────┘
+                                       │ asyncpg / TLS
+                    ┌──────────────────▼──────────────────┐
+                    │         PostgreSQL 16                │
+                    └─────────────────────────────────────┘
 ```
 
-**Principios clave**
+**Regla de dependencia:** `routes → services → repositories → models`
 
-- **Separación de responsabilidades:** `routes` delegan; `services` deciden; `repositories` persisten.
-- **Async end-to-end:** FastAPI → SQLAlchemy `AsyncSession` → `asyncpg` sin bloquear el event loop.
-- **Inyección de dependencias:** FastAPI `Depends()` para sesión DB, usuario actual y servicios.
-- **Proveedores desacoplados:** la capa `app/providers/ai/` aísla OpenAI del dominio.
+**Principios**
 
-### Estructura del repositorio (monorepo)
+- HTTP no conoce SQL; la lógica de negocio vive en servicios.
+- Async end-to-end: FastAPI → `AsyncSession` → `asyncpg`.
+- Inyección de dependencias vía FastAPI `Depends()`.
+- Proveedores IA desacoplados en `app/providers/ai/`.
+
+### Estructura del repositorio
 
 ```
-mis-eventos/                    # Raíz del repositorio Git
-├── .github/
-│   ├── actions/setup-backend/  # Composite: uv + caché
-│   └── workflows/              # CI/CD (backend-ci, docker, security)
-├── backend/                    # ← Este proyecto
-│   ├── app/
-│   │   ├── api/v1/             # Router, routes, dependencies
-│   │   ├── core/               # config, database, security, logging, middleware
-│   │   ├── models/             # SQLAlchemy ORM
-│   │   ├── schemas/            # Pydantic DTOs
-│   │   ├── repositories/       # Acceso a datos
-│   │   ├── services/           # Lógica de aplicación
-│   │   ├── providers/ai/       # Abstracción proveedores IA
-│   │   ├── utils/              # Reglas puras (event_rules, session_rules)
-│   │   ├── tests/              # unit | integration | factories | fixtures
-│   │   └── main.py
-│   ├── alembic/
-│   ├── Dockerfile              # Multi-stage: development | production
-│   ├── docker-compose.yml
-│   ├── docker-compose.test.yml
-│   ├── pyproject.toml
-│   ├── uv.lock
-│   ├── README.md
-│   └── ARCHITECTURE.md
-└── frontend/                   # Cliente (SPA) — evolución prevista del monorepo
-    └── …
+mis-eventos-api/
+├── app/
+│   ├── api/v1/           # Router, routes, dependencies
+│   ├── core/             # config, database, security, logging, middleware, migrations
+│   ├── models/           # SQLAlchemy ORM
+│   ├── schemas/          # Pydantic DTOs
+│   ├── repositories/     # Acceso a datos
+│   ├── services/         # Lógica de aplicación
+│   ├── providers/ai/     # OpenAI / Mock
+│   ├── utils/            # Reglas puras (event_rules, session_rules, password_policy)
+│   ├── tests/            # unit | integration | factories | fixtures
+│   └── main.py
+├── alembic/              # Migraciones versionadas
+├── scripts/              # start-production.sh (Render)
+├── .github/workflows/    # CI/CD
+├── Dockerfile            # Multi-stage: development | production
+├── docker-compose.yml
+├── pyproject.toml
+├── uv.lock
+├── ARCHITECTURE.md
+├── AI_USAGE.md
+└── README.md
 ```
+
+Diagramas C4, flujos full stack y decisiones técnicas: [ARCHITECTURE.md](ARCHITECTURE.md)
+
+---
+
+## Seguridad
+
+Defensa en profundidad implementada en producción:
+
+| Control | Implementación |
+|---------|----------------|
+| **Transporte** | HTTPS/TLS (Render + Vercel); contraseñas cifradas en tránsito |
+| **Password hashing** | bcrypt nativo (12 rounds), salting automático, nunca plaintext |
+| **JWT** | Access tokens HS256; revalidación de usuario activo en BD |
+| **CORS** | Orígenes explícitos (`localhost:5173`, dominio Vercel) |
+| **Validación** | Pydantic v2; errores 422 sanitizados sin exponer `input` |
+| **Anti-enumeración** | Mensajes genéricos en login/registro duplicado |
+| **Security headers** | `X-Content-Type-Options`, `X-Frame-Options`, `HSTS`, `Referrer-Policy` |
+| **Logging seguro** | Redacción automática de passwords, tokens y API keys |
+| **Secretos** | 12-factor; variables de entorno; nunca en código ni imágenes |
+| **RBAC** | Infraestructura `require_roles()` con verificación token ↔ rol en BD |
+
+**Política de contraseña:** mínimo 8 caracteres, mayúscula, minúscula, dígito y especial (`!@#$%^&*._-`).
+
+Detalle completo: [ARCHITECTURE.md § Seguridad](ARCHITECTURE.md#8-seguridad)
+
+---
+
+## JWT Authentication
+
+```
+POST /api/v1/auth/register  →  bcrypt hash  →  201 UserRead
+POST /api/v1/auth/login     →  verify hash  →  200 { access_token, token_type, expires_in }
+GET  /api/v1/auth/me        →  Bearer JWT   →  200 UserRead
+```
+
+| Aspecto | Valor |
+|---------|-------|
+| Algoritmo | HS256 |
+| Variable | `SECRET_KEY` (mín. 32 caracteres) |
+| Claims | `sub`, `role`, `type=access`, `iat`, `exp` |
+| TTL | `ACCESS_TOKEN_EXPIRE_MINUTES` (default 30 min) |
+| Header | `Authorization: Bearer <token>` |
+
+El backend **no confía ciegamente en el token**: decodifica JWT y carga el usuario activo desde PostgreSQL en cada request protegido.
+
+---
+
+## PostgreSQL
+
+- **Motor único** en desarrollo, CI y producción (no SQLite).
+- **PostgreSQL 16** con enums nativos (`user_role`, `event_status`, `registration_status`).
+- **Constraints** reales: cupos, fechas, unicidad parcial en inscripciones activas.
+- **Render Managed Database** en producción; Docker Compose en local.
+- GitHub Actions usa **service container** Postgres 16 para tests de integración.
+
+Entidades: `users` → `events` → `sessions` → `event_registrations`
+
+---
+
+## SQLAlchemy Async
+
+- **SQLAlchemy 2.0** con estilo moderno (`Mapped[]`, `mapped_column`).
+- **`AsyncSession`** por request con commit/rollback en `get_db_session`.
+- Driver **`asyncpg`** — referencia para PostgreSQL async en Python.
+- Pool configurado: `pool_size=10`, `max_overflow=20`, `pool_pre_ping=True`.
+- Repositorios encapsulan queries; servicios orquestan transacciones (`begin_nested` en cupos).
+
+---
+
+## Alembic
+
+Migraciones versionadas en `alembic/versions/`:
+
+```bash
+uv run alembic revision --autogenerate -m "descripcion"
+uv run alembic upgrade head
+uv run alembic history
+uv run alembic current
+```
+
+**Revisiones actuales:** `users` → `events` → `sessions` → `event_registrations`
+
+**Producción (Render):**
+
+- `scripts/start-production.sh` ejecuta `alembic upgrade head` antes de Uvicorn.
+- Lifespan aplica migraciones pendientes con advisory lock PostgreSQL (multi-worker safe).
+
+---
+
+## Docker
+
+### Imagen multi-stage (`Dockerfile`)
+
+| Stage | Uso |
+|-------|-----|
+| `development` | `uv sync` completo, hot reload, Alembic |
+| `production` | Imagen mínima, usuario `appuser` non-root, `HEALTHCHECK`, 2 workers Uvicorn |
+
+### docker-compose.yml
+
+| Servicio | Descripción |
+|----------|-------------|
+| `postgres` | PostgreSQL 16 Alpine, volumen persistente, healthcheck |
+| `backend` | API `:8000`, migraciones automáticas al arrancar |
+
+### docker-compose.test.yml
+
+| Servicio | Descripción |
+|----------|-------------|
+| `postgres-test` | DB aislada en puerto **5433** |
+| `test` | Runner pytest + cobertura |
+
+```bash
+docker compose up --build                    # Dev
+docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
+```
+
+---
+
+## CI/CD
+
+Tres workflows desacoplados en [`.github/workflows/`](.github/workflows/):
+
+| Workflow | Qué valida |
+|----------|------------|
+| [**backend-ci.yml**](.github/workflows/backend-ci.yml) | Ruff + Black → pytest + PostgreSQL 16 → cobertura ≥ 50% |
+| [**docker-validation.yml**](.github/workflows/docker-validation.yml) | Build multi-stage, Compose, smoke test `/health` |
+| [**security-checks.yml**](.github/workflows/security-checks.yml) | `pip-audit` (+ cron semanal) |
+
+**Pipeline**
+
+- Python 3.12 + **uv** con caché determinista
+- `concurrency` con cancel-in-progress
+- Artefactos: `htmlcov/`, `coverage.xml`
+- Deploy automático: **Render** (backend) · **Vercel** (frontend) en merge a `main`
+
+### Reproducir CI en local
+
+```bash
+uv sync --all-groups
+uv run ruff check app
+uv run ruff format --check app
+uv run black --check app
+export TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/mis_eventos_test
+export SECRET_KEY=ci-test-secret-key-minimum-32-characters-long
+export ENVIRONMENT=test
+export AI_PROVIDER=mock
+uv run pytest --cov=app --cov-report=term-missing --cov-fail-under=50
+```
+
+---
+
+## Testing
+
+Estrategia con **PostgreSQL real** en integración — misma semántica que producción.
+
+```
+app/tests/
+├── unit/           # Schemas, reglas, providers — sin DB
+├── integration/    # HTTP + PostgreSQL (AsyncClient)
+├── fixtures/       # client, database, users, events…
+├── factories/      # Payloads JSON reutilizables
+└── utils/          # Assertions de errores
+```
+
+```bash
+uv run pytest                    # Suite completa
+uv run pytest -m unit            # Solo unitarios
+uv run pytest -m integration     # Solo integración
+uv run pytest --cov=app --cov-report=html
+```
+
+| Métrica | Valor |
+|---------|-------|
+| Suite completa | **> 70%** cobertura |
+| Gate CI | ≥ **50%** (`--cov-fail-under=50`) |
+| Aislamiento | Savepoint + rollback por test de integración |
+
+---
+
+## IA
+
+Endpoint: `POST /api/v1/ai/generate-event-description` (requiere JWT)
+
+Genera descripciones profesionales para fichas de evento a partir de título y contexto opcional.
+
+| Proveedor | Config | Comportamiento |
+|-----------|--------|----------------|
+| **Mock** | `AI_PROVIDER=mock` (default) | Determinista, sin red — dev, tests, CI |
+| **OpenAI** | `AI_PROVIDER=openai` + `OPENAI_API_KEY` | Async con reintentos y timeout |
+| **Fallback** | Automático | Degrada a Mock si OpenAI falla |
+
+- Rate limiting por usuario (`429` al exceder cuota)
+- Sanitización de inputs en schemas
+- Errores `502` sin filtrar detalles internos del proveedor
+- Trazabilidad en logs: `request_id`, `user_id`, `provider`, `latency_ms`
+
+Uso responsable de IA en el desarrollo: [AI_USAGE.md](AI_USAGE.md)
+
+---
+
+## OpenAPI
+
+FastAPI genera **OpenAPI 3** automáticamente desde rutas y schemas Pydantic.
+
+| Recurso | Local | Producción |
+|---------|-------|------------|
+| **Swagger UI** | http://localhost:8000/docs | https://mis-eventos-api-3625.onrender.com/docs |
+| **ReDoc** | http://localhost:8000/redoc | https://mis-eventos-api-3625.onrender.com/redoc |
+| **Esquema JSON** | http://localhost:8000/openapi.json | https://mis-eventos-api-3625.onrender.com/openapi.json |
+
+**Autenticación en Swagger:** botón **Authorize** → `Bearer <access_token>` desde `POST /api/v1/auth/login`.
+
+Tags: `Authentication`, `Events`, `Sessions`, `Registrations`, `AI`, `Health`.
+
+---
+
+## Observabilidad
+
+| Capacidad | Implementación |
+|-----------|----------------|
+| **Logs JSON** | Structlog con `LOG_JSON=true` |
+| **Request tracing** | `X-Request-ID` en request/response y logs |
+| **Redacción** | Passwords, tokens y API keys → `[REDACTED]` |
+| **Health liveness** | `GET /health` — sin tocar BD |
+| **Health readiness** | `GET /api/v1/health` — incluye `SELECT 1` |
+| **Errores estructurados** | `{ "error": { "code", "message", "details?" }, "request_id" }` |
+| **Métricas request** | `duration_ms`, `status_code` en cada log de request |
+
+Ejemplo de log:
+
+```json
+{
+  "event": "request_completed",
+  "request_id": "550e8400-e29b-41d4-a716-446655440000",
+  "method": "POST",
+  "path": "/api/v1/auth/login",
+  "status_code": 200,
+  "duration_ms": 87.3,
+  "level": "info",
+  "timestamp": "2026-05-24T21:00:00.000Z"
+}
+```
+
+---
+
+## Stack tecnológico
+
+| Tecnología | Rol |
+|------------|-----|
+| **Python 3.12** | Runtime |
+| **FastAPI** | Framework HTTP async + OpenAPI |
+| **PostgreSQL 16** | Persistencia ACID |
+| **SQLAlchemy 2.0 Async** | ORM tipado |
+| **asyncpg** | Driver PostgreSQL async |
+| **Alembic** | Migraciones versionadas |
+| **Pydantic v2** | Validación + settings |
+| **JWT (python-jose)** | Autenticación stateless |
+| **bcrypt** | Hashing de contraseñas |
+| **Structlog** | Logs estructurados JSON |
+| **OpenAI SDK** | Proveedor IA (opcional) |
+| **Pytest + httpx** | Tests unit + integración |
+| **uv** | Gestión de dependencias |
+| **Docker** | Paridad dev/prod |
+| **GitHub Actions** | CI/CD |
+| **Render** | Deploy backend |
 
 ---
 
@@ -142,10 +425,7 @@ mis-eventos/                    # Raíz del repositorio Git
 
 ### Opción A — Docker Compose (recomendado)
 
-Levanta PostgreSQL y la API con migraciones automáticas:
-
 ```bash
-cd backend
 cp .env.example .env
 docker compose up --build
 ```
@@ -153,293 +433,52 @@ docker compose up --build
 | Servicio | URL |
 |----------|-----|
 | API | http://localhost:8000 |
-| Swagger UI | http://localhost:8000/api/v1/docs |
-| ReDoc | http://localhost:8000/api/v1/redoc |
-| Health (ligero) | http://localhost:8000/health |
+| Swagger | http://localhost:8000/docs |
+| ReDoc | http://localhost:8000/redoc |
+| Health | http://localhost:8000/health |
 | Health + DB | http://localhost:8000/api/v1/health |
 
-### Opción B — Desarrollo nativo con uv
+### Opción B — Desarrollo nativo
 
 ```bash
-cd backend
-
-# 1. Dependencias (runtime + dev: pytest, ruff, black, pip-audit)
 uv sync --all-groups
-
-# 2. Variables de entorno
 cp .env.example .env
-# Si Postgres corre en localhost (no en Docker), ajusta DATABASE_URL:
-# postgresql+asyncpg://postgres:postgres@localhost:5432/mis_eventos
-
-# 3. Base de datos (crear DB si no existe)
-# CREATE DATABASE mis_eventos;
-
-# 4. Migraciones
 uv run alembic upgrade head
-
-# 5. Servidor con hot reload
 uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Comandos de desarrollo frecuentes
+### Comandos frecuentes
 
 ```bash
-uv sync --all-groups              # Sincronizar entorno
-uv run ruff check app             # Lint
-uv run ruff format app            # Formato (ruff)
-uv run black app                  # Formato (black)
-uv add <paquete>                  # Nueva dependencia runtime
-uv add --group dev <paquete>      # Dependencia de desarrollo
+uv run ruff check app
+uv run ruff format app
+uv run black app
+uv run pytest
 ```
 
 ---
 
 ## Variables de entorno
 
-Copia [.env.example](.env.example) a `.env`. La configuración se carga vía **pydantic-settings** (`app/core/config.py`).
-
-| Variable | Requerida | Descripción | Ejemplo |
-|----------|-----------|-------------|---------|
-| `DATABASE_URL` | Sí | URL async SQLAlchemy. Debe usar driver `postgresql+asyncpg://` | `postgresql+asyncpg://postgres:postgres@localhost:5432/mis_eventos` |
-| `TEST_DATABASE_URL` | Tests | Base dedicada para pytest de integración (no usar la DB de dev) | `postgresql+asyncpg://postgres:postgres@localhost:5432/mis_eventos_test` |
-| `SECRET_KEY` | Sí | Clave de firma JWT (HS256), mínimo 32 caracteres. En documentación de despliegue a menudo se llama **JWT secret**; en este proyecto la variable efectiva es `SECRET_KEY` | `openssl rand -hex 32` |
-| `OPENAI_API_KEY` | No | API key de OpenAI. Obligatoria solo si `AI_PROVIDER=openai` | `sk-…` |
-| `AI_PROVIDER` | No | Proveedor IA: `mock` (default, sin red) u `openai` | `mock` |
-| `ENVIRONMENT` | No | Entorno de ejecución: `development`, `staging`, `production`, `test` | `development` |
-
-**Variables adicionales relevantes**
-
-| Variable | Descripción |
-|----------|-------------|
-| `JWT_ALGORITHM` | Algoritmo JWT (default `HS256`) |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | TTL del access token |
-| `LOG_JSON` | `true` → logs JSON (producción / observabilidad) |
-| `CORS_ORIGINS` | Lista JSON de orígenes permitidos |
-| `AI_OPENAI_MODEL` | Modelo OpenAI (default `gpt-4o-mini`) |
-| `AI_RATE_LIMIT_REQUESTS` | Límite de solicitudes IA por usuario/ventana |
-
-> **CI/CD:** en GitHub Actions se usan `TEST_DATABASE_URL`, `SECRET_KEY`, `ENVIRONMENT=test` y `AI_PROVIDER=mock`. Opcionalmente puedes definir un secret `JWT_SECRET_KEY` en GitHub y mapearlo a `SECRET_KEY` en el workflow de despliegue.
-
----
-
-## Migraciones
-
-Las migraciones viven en `alembic/versions/` y se aplican contra PostgreSQL.
-
-```bash
-# Crear nueva revisión (autogenerate tras cambiar modelos)
-uv run alembic revision --autogenerate -m "descripcion_corta"
-
-# Revisar el script generado, luego aplicar
-uv run alembic upgrade head
-
-# Ver historial / estado
-uv run alembic history
-uv run alembic current
-```
-
-**Revisiones actuales:** `users` → `events` → `sessions` → `event_registrations`.
-
-En Docker, `docker compose up` ejecuta `alembic upgrade head` antes de arrancar Uvicorn.
-
----
-
-## Testing
-
-La estrategia prioriza **PostgreSQL real** en integración (misma semántica que producción). SQLite no se usa por diseño.
-
-### Estructura
-
-```
-app/tests/
-├── unit/           # Reglas, schemas, providers — sin DB
-├── integration/    # API + PostgreSQL
-├── fixtures/       # client, database, users, events…
-├── factories/      # payloads de prueba
-└── utils/          # assertions reutilizables
-```
-
-### Preparar base de datos de test
-
-```sql
-CREATE DATABASE mis_eventos_test;
-```
-
-```bash
-export TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/mis_eventos_test
-export SECRET_KEY=ci-test-secret-key-minimum-32-characters-long
-export ENVIRONMENT=test
-export AI_PROVIDER=mock
-```
-
-### Ejecutar tests
-
-```bash
-# Suite completa (unit + integration)
-uv run pytest
-
-# Solo unitarios — no requieren PostgreSQL
-uv run pytest -m unit
-
-# Solo integración
-uv run pytest -m integration
-
-# Cobertura con reportes HTML y XML
-uv run pytest --cov=app --cov-report=term-missing --cov-report=html --cov-report=xml
-```
-
-Abre `htmlcov/index.html` para el reporte detallado.
-
-### Cobertura
-
-| Ámbito | Cobertura |
-|--------|-----------|
-| Suite completa (con PostgreSQL) | **> 70%** en código de aplicación (`app/`, excl. tests) |
-| Gate en CI | ≥ **50%** (`--cov-fail-under=50`) |
-| Tests unitarios aislados | ~60% (sin ejercitar capa HTTP/DB de integración) |
-
-La integración aporta la mayor parte de la cobertura en `services/`, `repositories/` y rutas HTTP.
-
-### Tests con Docker
-
-```bash
-docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
-```
-
-Levanta `postgres-test` en el puerto **5433** y ejecuta pytest dentro del contenedor de test.
-
-### Aislamiento en integración
-
-Cada test de integración obtiene una sesión con **rollback automático** (`join_transaction_mode="create_savepoint"`), evitando contaminación entre casos sin truncar tablas manualmente.
-
----
-
-## Swagger / OpenAPI
-
-FastAPI genera el esquema OpenAPI 3 automáticamente a partir de rutas y modelos Pydantic.
-
-| Recurso | Ruta |
-|---------|------|
-| **Swagger UI** (explorar y probar) | `/api/v1/docs` |
-| **ReDoc** (lectura) | `/api/v1/redoc` |
-| **Esquema JSON** | `/api/v1/openapi.json` |
-
-**Autenticación en Swagger:** botón **Authorize** → `Bearer <access_token>` obtenido de `POST /api/v1/auth/login`.
-
-Los tags agrupan el dominio: `Authentication`, `Events`, `Sessions`, `Registrations`, `AI`, `Health`.
-
----
-
-## CI/CD
-
-Los workflows viven en `.github/workflows/` (raíz del monorepo). Se disparan en `push` y `pull_request` cuando cambia `backend/**`.
-
-| Workflow | Qué valida |
-|----------|------------|
-| **backend-ci.yml** | Ruff + Black → pytest con PostgreSQL 16 (service container) → cobertura ≥ 50% |
-| **docker-validation.yml** | Build multi-stage (`development`, `production`), Compose, healthcheck `/health` |
-| **security-checks.yml** | `pip-audit` sobre lockfile exportado (+ cron semanal) |
-
-**Características del pipeline**
-
-- Python 3.12 + **uv** con caché de dependencias
-- `concurrency` con cancelación de runs obsoletos en la misma rama
-- `fail-fast` en matrices (preparado para ampliar versiones de Python)
-- Timeouts por job
-- Artefactos: `htmlcov/`, `coverage.xml`
-
-### Reproducir CI en local
-
-```bash
-cd backend
-uv sync --all-groups
-uv run ruff check app
-uv run ruff format --check app
-uv run black --check app
-export TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/mis_eventos_test
-export SECRET_KEY=ci-test-secret-key-minimum-32-characters-long
-export ENVIRONMENT=test
-export AI_PROVIDER=mock
-uv run pytest --cov=app --cov-report=term-missing --cov-report=html --cov-report=xml --cov-fail-under=50
-uv export --no-hashes --frozen --no-emit-project -o requirements-audit.txt
-uv run pip-audit -r requirements-audit.txt --strict --desc
-```
-
----
-
-## AI Feature
-
-Endpoint: `POST /api/v1/ai/generate-event-description` (requiere JWT).
-
-Genera una **descripción profesional** para la ficha de un evento a partir del título y contexto opcional (ubicación, tipo, audiencia).
-
-### Proveedores
-
-| Proveedor | Configuración | Comportamiento |
-|-----------|---------------|----------------|
-| **Mock** | `AI_PROVIDER=mock` (default) | Respuesta determinista sin llamadas de red. Ideal para dev, tests y CI |
-| **OpenAI** | `AI_PROVIDER=openai` + `OPENAI_API_KEY` | Chat Completions async con reintentos y timeout configurables |
-| **Fallback** | Automático | Si OpenAI falla, el servicio degrada a `MockAIProvider` y registra el evento en logs |
-
-### Capacidades transversales
-
-- **Rate limiting** por usuario (`AIRateLimiter`) — respuesta `429` al exceder cuota
-- **Sanitización** de entrada en schemas Pydantic
-- **Trazabilidad:** logs Structlog con `request_id`, `user_id`, `provider`, `latency_ms`
-- **Errores controlados:** `502` sin filtrar detalles internos del proveedor
-
-```
-Client → AIService → AIProvider (OpenAI | Mock)
-                  ↘ fallback MockAIProvider (si falla OpenAI)
-```
-
----
-
-## Docker
-
-### Imagen multi-stage (`Dockerfile`)
-
-| Stage | Uso |
-|-------|-----|
-| `development` | `uv sync` completo, hot reload, Alembic incluido |
-| `production` | Imagen mínima, usuario `appuser` no-root, `HEALTHCHECK` en `/health`, 2 workers Uvicorn |
-
-### docker-compose.yml
-
-| Servicio | Descripción |
-|----------|-------------|
-| `postgres` | PostgreSQL 16 Alpine, volumen persistente, healthcheck `pg_isready` |
-| `backend` | API en puerto 8000, depende de Postgres healthy, ejecuta migraciones al arrancar |
-
-### docker-compose.test.yml
-
-| Servicio | Descripción |
-|----------|-------------|
-| `postgres-test` | DB aislada en puerto **5433** |
-| `test` | Runner pytest + cobertura, sale con código de test |
-
----
-
-## Seguridad
-
-| Control | Implementación |
-|---------|----------------|
-| **JWT** | Access tokens HS256; claims `sub`, `role`, `type`, `exp`, `iat` |
-| **Password hashing** | bcrypt vía Passlib; política de complejidad en `UserCreate` |
-| **Request ID** | Middleware `RequestIdMiddleware` → header `X-Request-ID` en respuesta y logs |
-| **Validación de entrada** | Pydantic v2 en todos los bodies y query params |
-| **RBAC preparado** | `require_roles(UserRole.ORGANIZER, …)` con verificación token ↔ rol en BD |
-| **Errores uniformes** | `{ "error": { "code", "message" }, "request_id" }` sin stack traces al cliente |
-| **CORS** | Orígenes configurables por entorno |
-| **Secrets** | Solo vía variables de entorno; nunca en código ni en imágenes |
-
-**Política de contraseña:** mínimo 8 caracteres, mayúscula, minúscula, dígito y carácter especial.
+Copia [.env.example](.env.example) a `.env`. Configuración vía **pydantic-settings** (`app/core/config.py`).
+
+| Variable | Requerida | Descripción |
+|----------|-----------|-------------|
+| `DATABASE_URL` | Sí | `postgresql+asyncpg://...` |
+| `SECRET_KEY` | Sí | Firma JWT (mín. 32 chars) |
+| `ENVIRONMENT` | No | `development` \| `staging` \| `production` \| `test` |
+| `CORS_ORIGINS` | No | Lista JSON de orígenes permitidos |
+| `AI_PROVIDER` | No | `mock` (default) \| `openai` |
+| `OPENAI_API_KEY` | No | Requerida si `AI_PROVIDER=openai` |
+| `LOG_JSON` | No | `true` → logs JSON (producción) |
+
+Ver [.env.example](.env.example) para la lista completa.
 
 ---
 
 ## API REST (v1)
 
-Prefijo base: `/api/v1`
+Prefijo: `/api/v1`
 
 ### Autenticación
 
@@ -463,11 +502,11 @@ Prefijo base: `/api/v1`
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| `POST` | `/events/{event_id}/sessions` | Crear sesión en evento |
-| `GET` | `/events/{event_id}/sessions` | Listar sesiones del evento |
-| `GET` | `/sessions/{id}` | Detalle sesión |
+| `POST` | `/events/{event_id}/sessions` | Crear sesión |
+| `GET` | `/events/{event_id}/sessions` | Listar sesiones |
+| `GET` | `/sessions/{id}` | Detalle |
 | `PUT` | `/sessions/{id}` | Actualizar |
-| `DELETE` | `/sessions/{id}` | Eliminar (lógico) |
+| `DELETE` | `/sessions/{id}` | Eliminar |
 
 ### Inscripciones
 
@@ -476,31 +515,31 @@ Prefijo base: `/api/v1`
 | `POST` | `/events/{event_id}/register` | Inscribirse |
 | `DELETE` | `/events/{event_id}/register` | Cancelar inscripción |
 | `GET` | `/events/{event_id}/attendees` | Asistentes (organizador) |
-| `GET` | `/me/events` | Eventos del usuario inscrito |
+| `GET` | `/me/events` | Mis eventos inscritos |
 
 ### IA y salud
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| `POST` | `/ai/generate-event-description` | Generar descripción con IA |
-| `GET` | `/health` | Health + conectividad DB |
-| `GET` | `/health` (raíz) | Health ligero sin DB |
+| `POST` | `/ai/generate-event-description` | Generar descripción IA |
+| `GET` | `/api/v1/health` | Readiness + DB |
+| `GET` | `/health` | Liveness (raíz) |
 
 ### Ejemplo rápido
 
 ```bash
 # Registro
-curl -s -X POST http://localhost:8000/api/v1/auth/register \
+curl -s -X POST https://mis-eventos-api-3625.onrender.com/api/v1/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"email":"org@example.com","full_name":"Ana Org","password":"Secure1@pass"}'
+  -d '{"email":"user@example.com","full_name":"Ana User","password":"Secure1@pass"}'
 
 # Login
-TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/login \
+TOKEN=$(curl -s -X POST https://mis-eventos-api-3625.onrender.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"org@example.com","password":"Secure1@pass"}' | jq -r .access_token)
+  -d '{"email":"user@example.com","password":"Secure1@pass"}' | jq -r .access_token)
 
 # Perfil
-curl -s http://localhost:8000/api/v1/auth/me \
+curl -s https://mis-eventos-api-3625.onrender.com/api/v1/auth/me \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -509,3 +548,7 @@ curl -s http://localhost:8000/api/v1/auth/me \
 ## Licencia
 
 MIT — ver repositorio para detalles.
+
+---
+
+**Mis Eventos** · Backend by [Dariorojaslopez](https://github.com/Dariorojaslopez) · [Arquitectura completa →](ARCHITECTURE.md)
