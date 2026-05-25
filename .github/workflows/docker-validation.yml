@@ -6,6 +6,7 @@ on:
     paths:
       - "app/**"
       - "Dockerfile"
+      - "scripts/**"
       - "docker-compose.yml"
       - "docker-compose.test.yml"
       - ".github/workflows/docker-validation.yml"
@@ -15,6 +16,7 @@ on:
     paths:
       - "app/**"
       - "Dockerfile"
+      - "scripts/**"
       - "docker-compose.yml"
       - "docker-compose.test.yml"
       - ".github/workflows/docker-validation.yml"
@@ -28,6 +30,7 @@ env:
   WORKING_DIRECTORY: .
   IMAGE_NAME: mis-eventos-backend
   SECRET_KEY: ci-test-secret-key-minimum-32-characters-long
+  DATABASE_URL: postgresql+asyncpg://postgres:postgres@host.docker.internal:5432/mis_eventos_ci
 
 permissions:
   contents: read
@@ -83,8 +86,23 @@ jobs:
   production-healthcheck:
     name: Production Healthcheck
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: docker-build
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mis_eventos_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d mis_eventos_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 10s
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -94,16 +112,19 @@ jobs:
 
       - name: Run container and verify /health
         run: |
+          # La imagen production ejecuta alembic antes de uvicorn; requiere PostgreSQL accesible.
           docker run -d --name mis-eventos-health \
+            --add-host=host.docker.internal:host-gateway \
             -e SECRET_KEY="${{ env.SECRET_KEY }}" \
-            -e ENVIRONMENT=test \
+            -e DATABASE_URL="${{ env.DATABASE_URL }}" \
+            -e ENVIRONMENT=production \
             -e AI_PROVIDER=mock \
             -p 18000:8000 \
             ${{ env.IMAGE_NAME }}:health-ci
 
-          for i in {1..30}; do
+          for i in $(seq 1 45); do
             if curl -fsS http://localhost:18000/health; then
-              echo "Healthcheck OK"
+              echo "Healthcheck OK (attempt ${i})"
               docker stop mis-eventos-health
               docker rm mis-eventos-health
               exit 0
@@ -111,7 +132,7 @@ jobs:
             sleep 2
           done
 
-          echo "Healthcheck failed"
+          echo "Healthcheck failed after 90s"
           docker logs mis-eventos-health
           docker stop mis-eventos-health || true
           docker rm mis-eventos-health || true
